@@ -160,42 +160,6 @@ def draw_usb_connector(msp):
     # Draw the polyline
     msp.add_lwpolyline(points)
 
-
-def add_rounded_square_with_small_squares(msp, box_width, box_height, corner_radius, small_squares):
-    """
-    Draw a rounded rectangle (square) using lines and arcs, and place small squares on top, adjusting for overlap.
-
-    Args:
-    - msp: The model space where the rectangle is drawn.
-    - box_width: Width of the rectangle.
-    - box_height: Height of the rectangle.
-    - corner_radius: Radius of the rounded corners.
-    - small_squares: Array of tuples (width, height, center_x) for small squares to be drawn on top.
-    """
-    # Calculate corner points
-    # Calculate corner points
-    points = [
-        (corner_radius, 0),  # Start at bottom left (but offset by the corner radius)
-        (box_width - corner_radius, 0),
-        (box_width, corner_radius),
-        (box_width, box_height - corner_radius),
-        (box_width - corner_radius, box_height),
-        (corner_radius, box_height),
-        (0, box_height - corner_radius),
-        (0, corner_radius)
-    ]
-
-    # Draw lines and arcs
-    msp.add_lwpolyline([points[0], points[1]])  # Bottom line
-    msp.add_arc((box_width - corner_radius, corner_radius), corner_radius, 270, 360)  # Bottom-right corner
-    msp.add_lwpolyline([points[2], points[3]])  # Right line
-    msp.add_arc((box_width - corner_radius, box_height - corner_radius), corner_radius, 0, 90)  # Top-right corner
-    msp.add_lwpolyline([points[4], points[5]])  # Top line
-    msp.add_arc((corner_radius, box_height - corner_radius), corner_radius, 90, 180)  # Top-left corner
-    msp.add_lwpolyline([points[6], points[7]])  # Left line
-    msp.add_arc((corner_radius, corner_radius), corner_radius, 180, 270)  # Bottom-left corner
-
-
 def reverse_x(x, width):
     return width - x
 
@@ -452,6 +416,21 @@ def combine_hitbox_layout_and_image(image_name):
     cropped_img = crop_black_margin("combined_layer.png")
     cropped_img.save("final.png")
 
+def combine_hitbox_layout_and_image_bottom(image_name):
+    layout_name = "layer-art-bottom.dxf"
+    create_dxf_art_bottom(layout_name)
+    convert_dxf2img(layout_name)
+    add_padding(image_name, "added-padding-bottom.png", color=(255, 255, 255))
+    background = Image.open("added-padding-bottom.png")
+    hitbox_layer = Image.open(layout_name.replace(".dxf", ".png"))
+
+    bg_rezised = background.resize(hitbox_layer.size)
+
+    bg_rezised.paste(hitbox_layer, (0,0), hitbox_layer)
+    bg_rezised.save("combined_layer-bottom.png")
+    cropped_img = crop_black_margin("combined_layer-bottom.png")
+    cropped_img.save("final-bottom.png")
+
 def crop_black_margin(image_path):
     # Open the image
     img = Image.open(image_path)
@@ -599,10 +578,23 @@ def create_dxf_art(file_name, doc = ezdxf.new(dxfversion='R2010')):
     draw_all_buttons(msp, box_width)
     draw_small_buttons(msp, box_width, box_height, pico_w)
     draw_all_screws(msp, box_width, box_height)
-    
+
     add_rounded_square(msp, box_width, box_height, corner_radius)
     draw_oled(msp, box_width, box_height, 3.4, 1.9)
-    
+
+    # Save the DXF document
+    doc.saveas(file_name)
+
+def create_dxf_art_bottom(file_name, doc = ezdxf.new(dxfversion='R2010')):
+    # Create a new DXF document
+    # doc = ezdxf.new(dxfversion='R2010')
+    msp = doc.modelspace()
+
+    draw_all_screws(msp, box_width, box_height)
+
+    add_rounded_square(msp, box_width, box_height, corner_radius)
+    # add_rounded_square(msp, box_width - 4, box_height - 4, corner_radius, (2, 2))
+
     # Save the DXF document
     doc.saveas(file_name)
 
@@ -616,4 +608,5 @@ create_dxf_layer4("layer4.dxf") # 2mm
 create_dxf_layer5("layer5.dxf") # 3mm
 create_dxf_layer6("layer6.dxf") # 3mm
 
-combine_hitbox_layout_and_image("stock.png") # stock ratio is 2 x 1
+# combine_hitbox_layout_and_image("stock.png") # stock ratio is 2 x 1
+combine_hitbox_layout_and_image_bottom("stock-bottom.png")
