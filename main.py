@@ -1,22 +1,26 @@
 import math
-import re
-
+import os
+import io
 import ezdxf
 from PIL import Image, ImageOps
 from ezdxf.addons.drawing import RenderContext, Frontend
 from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
 from matplotlib import pyplot as plt
 
+
 # constant
 box_width = 40  # in cm
 box_height = 20  # in cm
 corner_radius = 1  # 1 cm radius for the rounded corners
-pico_w = 2.2
+pico_w = 2.1
 pico_h = 5.2
 switch_width = 1.4
 oled_height = 1.9
 oled_width = 3.5
 pico_y_from_top = .38
+output_dxf_dir = "output_dxf"
+output_image_dir = "output_image"
+os.makedirs(output_dxf_dir, exist_ok=True)
 
 def draw_oled(msp, box_width, box_height, rect_width, rect_height):
     """
@@ -269,6 +273,10 @@ def draw_all_buttons(msp, box_width):
     for name, (x, y, radius) in get_big_circle_points():
         msp.add_circle((x, y), radius)
         
+def draw_all_buttons_center(msp):
+    for name, (x, y, radius) in get_big_circle_points() | get_small_circle_points(box_width, box_height, pico_w):
+        msp.add_point((x, y))
+
 def draw_small_buttons(msp, box_width, box_height, pico_w):    
     for name, (x, y, radius) in get_small_circle_points(box_width, box_height, pico_w):
         msp.add_circle((x, y), radius)
@@ -348,108 +356,88 @@ def draw_switch_footprint(msp, center_point):
     ]
     for x, y, radius in circles:
         msp.add_circle((x, y), radius)
-        
-def convert_dxf2img(file_name):
-    # Create a new DXF document
-    doc = ezdxf.readfile(file_name)
+
+def combine_hitbox_layout_and_image(image_name):
+    doc = create_dxf_art()
+    hitbox_image = convert_dxf2img(doc)
+
+    original_image = Image.open(image_name)
+    padded_image = add_padding(original_image)
+
+    resized_bg = padded_image.resize(hitbox_image.size)
+    resized_bg.paste(hitbox_image, (0, 0), hitbox_image)
+
+    combined_image = crop_black_margin(resized_bg)
+    combined_image.save("final.png")
+    print("finish top")
+
+def create_dxf_art_bottom(doc=None):
+    if doc is None:
+        doc = ezdxf.new(dxfversion='R2010')
     msp = doc.modelspace()
-    
-    # Define dimensions in cm
-    box_width_cm = 40
-    box_height_cm = 20
-    img_format = '.png'
+
+    # Draw all screws and add rounded square
+    draw_all_screws(msp, box_width, box_height)
+    add_rounded_square(msp, box_width, box_height, corner_radius)
+
+    return doc
+
+def convert_dxf2img(doc):
+    msp = doc.modelspace()
     img_dpi = 300
-    
-    # Convert dimensions from cm to inches (1 inch = 2.54 cm)
-    box_width_in = box_width_cm / 2.54
-    box_height_in = box_height_cm / 2.54
-    
-    # Create a new figure with the specified size
+
+    box_width_in = box_width / 2.54
+    box_height_in = box_height / 2.54
+
     fig = plt.figure(figsize=(box_width_in, box_height_in))
     ax = fig.add_axes([0, 0, 1, 1])
 
-    # Prepare the drawing context
     ctx = RenderContext(doc)
+    ctx.stroke_fill = (0, 0, 0)
     ctx.set_current_layout(msp)
     out = MatplotlibBackend(ax)
     Frontend(ctx, out).draw_layout(msp, finalize=True)
 
-    # Generate the output filename
-    img_name = re.findall(r"(\S+)\.", file_name)  # Select the image name that is the same as the dxf file name
-    first_param = ''.join(img_name) + img_format  # Concatenate list and string
-    
-    plt.subplots_adjust(left=2, right=10, top=10, bottom=0)
-
-    # Save the figure with the specified DPI
-    fig.savefig(first_param, transparent=True, dpi=img_dpi, pad_inches="layout", bbox_inches="tight")
-    
-    # Close the figure to free memory
+    img_buffer = io.BytesIO()
+    fig.savefig(img_buffer, format='png', transparent=True, dpi=img_dpi, bbox_inches="tight")
     plt.close(fig)
-    print(file_name, "Converted Successfully")
-    
-def add_padding(image_path, output_path, color=(255, 255, 255)):
-    image = Image.open(image_path)
-    
-    # Calculate padding based on 10% of the original dimensions
+
+    img_buffer.seek(0)
+    return Image.open(img_buffer)
+
+def add_padding(image, color=(255, 255, 255)):
     padding_width = int(image.width * 0.06)
     padding_height = int(image.height * 0.07)
-    
-    # Apply padding to the image
-    padded_image = ImageOps.expand(image, border=(padding_width, padding_height), fill=(0, 0, 0))  # Fill color can be adjusted
-    
-    # Save the padded image
-    padded_image.save(output_path)
 
-        
-def combine_hitbox_layout_and_image(image_name):
-    layout_name = "layer-art.dxf"
-    create_dxf_art(layout_name)
-    convert_dxf2img(layout_name)
-    add_padding(image_name, "added-padding.png", color=(255, 255, 255))
-    background = Image.open("added-padding.png")
-    hitbox_layer = Image.open(layout_name.replace(".dxf", ".png"))
-    
-    bg_rezised = background.resize(hitbox_layer.size)
-    
-    bg_rezised.paste(hitbox_layer, (0,0), hitbox_layer)
-    bg_rezised.save("combined_layer.png")
-    cropped_img = crop_black_margin("combined_layer.png")
-    cropped_img.save("final.png")
+    padded_image = ImageOps.expand(image, border=(padding_width, padding_height), fill=(0, 0, 0))
+    return padded_image
 
 def combine_hitbox_layout_and_image_bottom(image_name):
-    layout_name = "layer-art-bottom.dxf"
-    create_dxf_art_bottom(layout_name)
-    convert_dxf2img(layout_name)
-    add_padding(image_name, "added-padding-bottom.png", color=(255, 255, 255))
-    background = Image.open("added-padding-bottom.png")
-    hitbox_layer = Image.open(layout_name.replace(".dxf", ".png"))
+    doc = create_dxf_art_bottom()
+    hitbox_image = convert_dxf2img(doc)
 
-    bg_rezised = background.resize(hitbox_layer.size)
+    original_image = Image.open(image_name)
+    padded_image = add_padding(original_image)
 
-    bg_rezised.paste(hitbox_layer, (0,0), hitbox_layer)
-    bg_rezised.save("combined_layer-bottom.png")
-    cropped_img = crop_black_margin("combined_layer-bottom.png")
-    cropped_img.save("final-bottom.png")
+    resized_bg = padded_image.resize(hitbox_image.size)
+    resized_bg.paste(hitbox_image, (0, 0), hitbox_image)
 
-def crop_black_margin(image_path):
-    # Open the image
-    img = Image.open(image_path)
+    combined_image = crop_black_margin(resized_bg)
+    combined_image.save("final-bottom.png")
+    print("finish bottom")
 
-    # Convert image to grayscale
-    gray_img = img.convert("L")
-
-    # Get the bounding box of the non-black areas
+def crop_black_margin(image):
+    gray_img = image.convert("L")
     bbox = gray_img.getbbox()
 
-    # Crop the image using the bounding box
     if bbox:
-        cropped_img = img.crop(bbox)
+        cropped_img = image.crop(bbox)
     else:
-        cropped_img = img  # If the image is entirely black, return the original image
+        cropped_img = image  # If the image is entirely black, return the original image
 
     return cropped_img
 
-def create_dxf_layer1(file_name, doc = ezdxf.new(dxfversion='R2010')):
+def create_dxf_layer1(file_name, doc = ezdxf.new(dxfversion='R2010'), save_file = True):
     # Create a new DXF document
     msp = doc.modelspace()
 
@@ -459,8 +447,11 @@ def create_dxf_layer1(file_name, doc = ezdxf.new(dxfversion='R2010')):
     
     add_rounded_square(msp, box_width, box_height, corner_radius)
     
-    # Save the DXF document
-    doc.saveas(file_name)
+    draw_all_buttons_center(msp)
+
+    if save_file:
+        # Save the DXF document
+        doc.saveas(file_name)
 
 
 def create_dxf_layer2(file_name, doc = ezdxf.new(dxfversion='R2010')):
@@ -489,7 +480,6 @@ def create_dxf_layer3(file_name, doc = ezdxf.new(dxfversion='R2010')):
     # doc = ezdxf.new(dxfversion='R2010')
     msp = doc.modelspace()
 
-    switch_width = 1.4
     for name, (x, y, radius) in get_big_circle_points():
         draw_switch_square(msp, (x, y), switch_width)
     for name, (x, y, radius) in get_small_circle_points(box_width, box_height, pico_w):
@@ -511,7 +501,6 @@ def create_dxf_layer3(file_name, doc = ezdxf.new(dxfversion='R2010')):
     
 def create_dxf_layer4(file_name, doc = ezdxf.new(dxfversion='R2010')):
     # Create a new DXF document
-    # doc = ezdxf.new(dxfversion='R2010')
     msp = doc.modelspace()
 
     for name, (x, y, radius) in get_big_circle_points() | get_small_circle_points(box_width, box_height, pico_w):
@@ -560,53 +549,54 @@ def create_dxf_layer6(file_name, doc = ezdxf.new(dxfversion='R2010')):
     doc.saveas(file_name)
 
 def create_dxf_total(file_name):
-    doc = ezdxf.new(dxfversion='R2010')
-    create_dxf_layer1("layer1.dxf", doc) # 3mm
-    create_dxf_layer2("layer2.dxf", doc) # 3mm
-    create_dxf_layer3("layer3.dxf", doc) # 1.65mm
-    create_dxf_layer4("layer4.dxf", doc) # 2mm
-    create_dxf_layer5("layer5.dxf", doc) # 3mm
-    create_dxf_layer6("layer6.dxf", doc) # 3mm
-    doc.saveas(file_name)
+    # Full path for the output file
+    path = dxf_file_path(file_name)
 
-        
-def create_dxf_art(file_name, doc = ezdxf.new(dxfversion='R2010')):
-    # Create a new DXF document
-    # doc = ezdxf.new(dxfversion='R2010')
+    doc = ezdxf.new(dxfversion='R2010')
+
+    # Call the functions with the correct paths
+    create_dxf_layer1("temp.dxf", doc, )  # 3mm
+    create_dxf_layer2("temp.dxf", doc)  # 3mm
+    create_dxf_layer3("temp.dxf", doc)  # 2mm
+    create_dxf_layer4("temp.dxf", doc)  # 2mm
+    create_dxf_layer5("temp.dxf", doc)  # 3mm
+    create_dxf_layer6("temp.dxf", doc)  # 3mm
+
+    # Save the final DXF file in the output directory
+    doc.saveas(path)
+
+def dxf_file_path(file_name):
+   return os.path.join(output_dxf_dir, file_name)
+
+def image_file_path(file_name):
+    return os.path.join(output_image_dir, file_name)
+
+def create_dxf_art(doc=None):
+    if doc is None:
+        doc = ezdxf.new(dxfversion='R2010')
     msp = doc.modelspace()
 
     draw_all_buttons(msp, box_width)
     draw_small_buttons(msp, box_width, box_height, pico_w)
     draw_all_screws(msp, box_width, box_height)
-
     add_rounded_square(msp, box_width, box_height, corner_radius)
     draw_oled(msp, box_width, box_height, 3.4, 1.9)
 
-    # Save the DXF document
-    doc.saveas(file_name)
+    doc.saveas(dxf_file_path("layer-art.dxf"))
 
-def create_dxf_art_bottom(file_name, doc = ezdxf.new(dxfversion='R2010')):
-    # Create a new DXF document
-    # doc = ezdxf.new(dxfversion='R2010')
-    msp = doc.modelspace()
-
-    draw_all_screws(msp, box_width, box_height)
-
-    add_rounded_square(msp, box_width, box_height, corner_radius)
-    # add_rounded_square(msp, box_width - 4, box_height - 4, corner_radius, (2, 2))
-
-    # Save the DXF document
-    doc.saveas(file_name)
+    return doc
 
 
 # Generate the DXF layout
-create_dxf_total("total.dxf")
-create_dxf_layer1("layer1.dxf") # 3mm
-create_dxf_layer2("layer2.dxf") # 3mm
-create_dxf_layer3("layer3.dxf") # 2mm
-create_dxf_layer4("layer4.dxf") # 2mm
-create_dxf_layer5("layer5.dxf") # 3mm
-create_dxf_layer6("layer6.dxf") # 3mm
-
+# create_dxf_total("total.dxf")
+# create_dxf_layer1(dxf_file_path("layer1.dxf")) # 3mm
+# create_dxf_layer2(dxf_file_path("layer2.dxf")) # 3mm
+# create_dxf_layer3(dxf_file_path("layer3.dxf")) # 2mm
+# create_dxf_layer4(dxf_file_path("layer4.dxf")) # 2mm
+# create_dxf_layer5(dxf_file_path("layer5.dxf")) # 3mm
+# create_dxf_layer6(dxf_file_path("layer6.dxf")) # 3mm
+#
 # combine_hitbox_layout_and_image("stock.png") # stock ratio is 2 x 1
-combine_hitbox_layout_and_image_bottom("stock-bottom.png")
+# combine_hitbox_layout_and_image_bottom("stock-bottom.png")
+
+create_dxf_art()
