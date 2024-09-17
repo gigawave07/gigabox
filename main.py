@@ -13,10 +13,10 @@ box_width = 40  # in cm
 box_height = 20  # in cm
 corner_radius = 1  # 1 cm radius for the rounded corners
 pico_w = 2.1
-pico_h = 5.2
+pico_h = 5.3
 switch_width = 1.4
 oled_height = 1.9
-oled_width = 3.5
+oled_width = 3.6
 pico_y_from_top = .38
 output_dxf_dir = "output_dxf"
 output_image_dir = "output_image"
@@ -48,7 +48,7 @@ def draw_oled(msp, box_width, box_height, rect_width, rect_height):
 
     # Draw the rectangle
     msp.add_lwpolyline(points)
-    
+
 def draw_oled_bottom(msp, oled_bottom_height):
     start_x = box_width / 2 - oled_width / 2
     start_y = box_height / 2 - oled_height / 2 - oled_bottom_height
@@ -60,7 +60,7 @@ def draw_oled_bottom(msp, oled_bottom_height):
         (start_x, start_y)  # Closing the loop back to bottom-left
     ]
     msp.add_lwpolyline(points)
-    
+
 def draw_oled_top(msp, oled_top_height):
     start_x = box_width / 2 - oled_width / 2
     start_y = box_height / 2 + oled_height / 2
@@ -72,7 +72,7 @@ def draw_oled_top(msp, oled_top_height):
         (start_x, start_y)  # Closing the loop back to bottom-left
     ]
     msp.add_lwpolyline(points)
-    
+
 def draw_oled_wire(msp):
     wire_height = .3
     wire_width = 1.4
@@ -151,7 +151,7 @@ def add_rounded_square(msp, box_width, box_height, corner_radius, start_point = 
     msp.add_arc((x0 + corner_radius, y0 + box_height - corner_radius), corner_radius, 90, 180)  # Top-left corner
     msp.add_lwpolyline([points[6], points[7]])  # Left line
     msp.add_arc((x0 + corner_radius, y0 + corner_radius), corner_radius, 180, 270)  # Bottom-left corner
-    
+
 def draw_usb_connector(msp):
     # Initialize list of points for polyline
     points = [
@@ -160,7 +160,7 @@ def draw_usb_connector(msp):
         (20.5, box_height - pico_y_from_top),
         (20.5, 20),
     ]
-    
+
     # Draw the polyline
     msp.add_lwpolyline(points)
 
@@ -196,7 +196,7 @@ def get_big_circle_points():
         'LP', 'MP', 'HP', 'LK', 'MK', 'HK', 'DI', 'L1', 'L2',
         'LP_reverse', 'MP_reverse', 'HP_reverse', 'LK_reverse', 'MK_reverse', 'HK_reverse', 'DI_reverse', 'L1_reverse', 'L2_reverse'
     ]
-    
+
     xLP_LK = 0.5
     yLP_LK = 2.8
     # Define the circles' positions and sizes (x, y, radius)
@@ -253,34 +253,34 @@ def get_small_circle_points(box_width, box_height, pico_w):
     xStart = xSelect - 2.5
     yStart = ySelect
     names = ['Select', 'Start', 'Select_reverse', 'Start_reverse']
-    
+
     circles = [
         (xSelect, ySelect, button_radius),
         (xStart, yStart, button_radius),
         (reverse_x(xSelect, box_width), ySelect, button_radius),
         (reverse_x(xStart, box_width), yStart, button_radius),
     ]
-    
+
     circle_points = {}
 
     for (x, y, radius), name in zip(circles, names):
         circle_points[name] = (x, y, radius)
 
     return circle_points.items()
-    
+
 
 def draw_all_buttons(msp, box_width):
     for name, (x, y, radius) in get_big_circle_points():
         msp.add_circle((x, y), radius)
-        
+
 def draw_all_buttons_center(msp):
     for name, (x, y, radius) in get_big_circle_points() | get_small_circle_points(box_width, box_height, pico_w):
         msp.add_point((x, y))
 
-def draw_small_buttons(msp, box_width, box_height, pico_w):    
+def draw_small_buttons(msp, box_width, box_height, pico_w):
     for name, (x, y, radius) in get_small_circle_points(box_width, box_height, pico_w):
         msp.add_circle((x, y), radius)
-        
+
 def draw_all_screws(msp, box_width, box_height):
     button_radius = 0.2
     x10h = 1
@@ -307,10 +307,10 @@ def draw_all_screws(msp, box_width, box_height):
         (x11h, y11h, button_radius),
         (x1h, y1h, button_radius),
     ]
-    
+
     for (x, y, radius) in circles:
         msp.add_circle((x, y), radius)
-        
+
 def draw_pico(msp, pico_w, pico_h):
     draw_usb(msp, 20, 20, pico_w, pico_h, pico_y_from_top)
 
@@ -318,15 +318,15 @@ def draw_pico_wire_connector(msp, pico_w, pico_h):
     rect_width = .3
     draw_usb(msp, 20 - pico_w / 2 + rect_width / 2, 20, rect_width, pico_h, pico_y_from_top)
     draw_usb(msp, 20 + pico_w / 2 - rect_width / 2, 20, rect_width, pico_h, pico_y_from_top)
-    
+
 def draw_ps5_pcb(msp):
     rect_height = 1.75
     draw_usb(msp, 35, 20, rect_height, rect_height, 0.6)
-    
+
 def draw_ps5_port(msp):
     rect_height = 1.45
     draw_usb(msp, 35, 20, rect_height, rect_height, 0)
-    
+
 def draw_switch_square(msp, center_point, side_length):
     x, y = center_point
     half_side = side_length / 2
@@ -342,7 +342,7 @@ def draw_switch_square(msp, center_point, side_length):
 
     # Add the polyline to the model space
     msp.add_lwpolyline(points, close=True)
-    
+
 def draw_switch_footprint(msp, center_point):
     x, y = center_point
     draw_switch_square(msp, (x, y - .493), .3)
@@ -444,10 +444,8 @@ def create_dxf_layer1(file_name, doc = ezdxf.new(dxfversion='R2010'), save_file 
     draw_all_buttons(msp, box_width)
     draw_small_buttons(msp, box_width, box_height, pico_w)
     draw_all_screws(msp, box_width, box_height)
-    
+
     add_rounded_square(msp, box_width, box_height, corner_radius)
-    
-    draw_all_buttons_center(msp)
 
     if save_file:
         # Save the DXF document
@@ -461,20 +459,20 @@ def create_dxf_layer2(file_name, doc = ezdxf.new(dxfversion='R2010')):
     draw_all_buttons(msp, box_width)
     draw_small_buttons(msp, box_width, box_height, pico_w)
     draw_all_screws(msp, box_width, box_height)
-    
+
     add_rounded_square(msp, box_width, box_height, corner_radius)
     draw_usb_connector(msp)
     draw_pico(msp, pico_w, pico_h)
     draw_ps5_port(msp)
-    
+
     draw_oled_wire(msp)
     draw_oled(msp, box_width, box_height, oled_width, oled_height)
     draw_oled_bottom(msp, .8)
-    
-    # Save the DXF document
-    doc.saveas(file_name)   
 
-    
+    # Save the DXF document
+    doc.saveas(file_name)
+
+
 def create_dxf_layer3(file_name, doc = ezdxf.new(dxfversion='R2010')):
     # Create a new DXF document
     # doc = ezdxf.new(dxfversion='R2010')
@@ -484,21 +482,21 @@ def create_dxf_layer3(file_name, doc = ezdxf.new(dxfversion='R2010')):
         draw_switch_square(msp, (x, y), switch_width)
     for name, (x, y, radius) in get_small_circle_points(box_width, box_height, pico_w):
         draw_switch_square(msp, (x, y), switch_width)
-        
+
     draw_all_screws(msp, box_width, box_height)
-    
+
     add_rounded_square(msp, box_width, box_height, corner_radius)
     draw_usb_connector(msp)
     draw_pico(msp, pico_w, pico_h)
     draw_ps5_port(msp)
-    
+
     draw_oled(msp, box_width, box_height, oled_width, oled_height)
     draw_oled_bottom(msp, 1)
     draw_oled_top(msp, .5)
 
     # Save the DXF document
     doc.saveas(file_name)
-    
+
 def create_dxf_layer4(file_name, doc = ezdxf.new(dxfversion='R2010')):
     # Create a new DXF document
     msp = doc.modelspace()
@@ -507,16 +505,16 @@ def create_dxf_layer4(file_name, doc = ezdxf.new(dxfversion='R2010')):
         draw_switch_footprint(msp, (x, y))
 
     draw_all_screws(msp, box_width, box_height)
-    
+
     add_rounded_square(msp, box_width, box_height, corner_radius)
     draw_pico_wire_connector(msp, pico_w, pico_h)
     draw_ps5_port(msp)
-    
+
     draw_oled_wire(msp)
 
     # Save the DXF document
     doc.saveas(file_name)
-    
+
 def create_dxf_layer5(file_name, doc = ezdxf.new(dxfversion='R2010')):
     # Create a new DXF document
     # doc = ezdxf.new(dxfversion='R2010')
@@ -527,7 +525,7 @@ def create_dxf_layer5(file_name, doc = ezdxf.new(dxfversion='R2010')):
     draw_all_screws(msp, box_width, box_height)
     for name, (x, y, radius) in get_small_circle_points(box_width, box_height, pico_w):
         draw_switch_square(msp, (x, y), switch_width + .35)
-    
+
     add_rounded_square(msp, box_width, box_height, corner_radius)
     add_rounded_square(msp, box_width - 4, box_height - 4, corner_radius, (2, 2))
     draw_pico(msp, pico_wire_w, pico_wire_h)
@@ -542,7 +540,7 @@ def create_dxf_layer6(file_name, doc = ezdxf.new(dxfversion='R2010')):
     msp = doc.modelspace()
 
     draw_all_screws(msp, box_width, box_height)
-    
+
     add_rounded_square(msp, box_width, box_height, corner_radius)
 
     # Save the DXF document
@@ -588,13 +586,13 @@ def create_dxf_art(doc=None):
 
 
 # Generate the DXF layout
-# create_dxf_total("total.dxf")
-# create_dxf_layer1(dxf_file_path("layer1.dxf")) # 3mm
-# create_dxf_layer2(dxf_file_path("layer2.dxf")) # 3mm
-# create_dxf_layer3(dxf_file_path("layer3.dxf")) # 2mm
-# create_dxf_layer4(dxf_file_path("layer4.dxf")) # 2mm
-# create_dxf_layer5(dxf_file_path("layer5.dxf")) # 3mm
-# create_dxf_layer6(dxf_file_path("layer6.dxf")) # 3mm
+create_dxf_total("total.dxf")
+create_dxf_layer1(dxf_file_path("layer1.dxf")) # 3mm
+create_dxf_layer2(dxf_file_path("layer2.dxf")) # 3mm
+create_dxf_layer3(dxf_file_path("layer3.dxf")) # 2mm
+create_dxf_layer4(dxf_file_path("layer4.dxf")) # 2mm
+create_dxf_layer5(dxf_file_path("layer5.dxf")) # 3mm
+create_dxf_layer6(dxf_file_path("layer6.dxf")) # 3mm
 #
 # combine_hitbox_layout_and_image("stock.png") # stock ratio is 2 x 1
 # combine_hitbox_layout_and_image_bottom("stock-bottom.png")
