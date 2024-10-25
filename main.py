@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 box_width = 40  # in cm
 box_height = 20  # in cm
 corner_radius = 1  # 1 cm radius for the rounded corners
-pico_w = 2.1
+pico_w = 2.2
 pico_h = 5.3
 switch_width = 1.4
 oled_height = 1.9
@@ -349,10 +349,15 @@ def draw_switch_footprint(msp, center_point):
     hot_swap_radius = .15
     normal_radius = .12
     circles = [
-        (x, y, .25), # center
-        (x - .5, y - .515, .16), # stablized pin
+        # uncomment if using choc v2
+        # (x, y, .25), # center choc v2
+        # (x - .5, y - .515, .16), # stablized pin
         (x, y + .59, hot_swap_radius), # middle small pin
-        (x + .5, y + .38, hot_swap_radius) # off angle small pin
+        (x + .5, y + .38, hot_swap_radius), # off angle small pin
+        # comment below if using choc v2
+        (x, y, .17), # center choc v1
+        (x + .55, y, .095), # side stablized pin v1
+        (x - .55, y, .095), # side stablized pin v1
     ]
     for x, y, radius in circles:
         msp.add_circle((x, y), radius)
@@ -598,3 +603,5 @@ create_dxf_layer6(dxf_file_path("layer6.dxf")) # 3mm
 # combine_hitbox_layout_and_image_bottom("stock-bottom.png")
 
 create_dxf_art()
+
+print("finish")
