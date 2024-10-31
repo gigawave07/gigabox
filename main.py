@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 box_width = 40  # in cm
 box_height = 20  # in cm
 corner_radius = 1  # 1 cm radius for the rounded corners
-pico_w = 2.2
+pico_w = 2.3
 pico_h = 5.3
 switch_width = 1.4
 oled_height = 1.9
@@ -345,19 +345,23 @@ def draw_switch_square(msp, center_point, side_length):
 
 def draw_switch_footprint(msp, center_point):
     x, y = center_point
-    draw_switch_square(msp, (x, y - .493), .3)
+    # led hole
+    # draw_switch_square(msp, (x, y - .493), .3)
     hot_swap_radius = .15
     normal_radius = .12
     circles = [
         # uncomment if using choc v2
-        # (x, y, .25), # center choc v2
-        # (x - .5, y - .515, .16), # stablized pin
+        (x, y, .25), # center choc v2
+        (x - .5, y - .515, .095), # stablized pin
         (x, y + .59, hot_swap_radius), # middle small pin
         (x + .5, y + .38, hot_swap_radius), # off angle small pin
         # comment below if using choc v2
-        (x, y, .17), # center choc v1
+        # (x, y, .17), # center choc v1
         (x + .55, y, .095), # side stablized pin v1
         (x - .55, y, .095), # side stablized pin v1
+        # cherry mx
+        (x + .254, y - .508, hot_swap_radius), # 5h pin
+        (x - .381, y - .254, hot_swap_radius), # 9h pin
     ]
     for x, y, radius in circles:
         msp.add_circle((x, y), radius)
@@ -529,7 +533,7 @@ def create_dxf_layer5(file_name, doc = ezdxf.new(dxfversion='R2010')):
 
     draw_all_screws(msp, box_width, box_height)
     for name, (x, y, radius) in get_small_circle_points(box_width, box_height, pico_w):
-        draw_switch_square(msp, (x, y), switch_width + .35)
+        draw_switch_square(msp, (x, y), switch_width + .37)
 
     add_rounded_square(msp, box_width, box_height, corner_radius)
     add_rounded_square(msp, box_width - 4, box_height - 4, corner_radius, (2, 2))
