@@ -9,12 +9,11 @@ from matplotlib import pyplot as plt
 
 
 # constant
-mm_multiplier = .01
 box_width = 40  # in cm
 box_height = 20  # in cm
 corner_radius = 1  # 1 cm radius for the rounded corners
 pico_w = 2.3
-pico_h = 5.3
+pico_h = 5.2
 switch_width = 1.4
 oled_height = 1.9
 oled_width = 3.6
@@ -294,7 +293,7 @@ def draw_all_screws(msp, box_width, box_height):
     y4h = y8h
     x6h = box_width / 2
     y6h = y8h
-    x11h = box_width / 2 - 3
+    x11h = box_width / 2 - 2
     y11h = y10h
     x1h = reverse_x(x11h, box_width)
     y1h = y11h
@@ -316,7 +315,7 @@ def draw_pico(msp, pico_w, pico_h):
     draw_usb(msp, 20, 20, pico_w, pico_h, pico_y_from_top)
 
 def draw_pico_wire_connector(msp, pico_w, pico_h):
-    rect_width = .3
+    rect_width = .4
     draw_usb(msp, 20 - pico_w / 2 + rect_width / 2, 20, rect_width, pico_h, pico_y_from_top)
     draw_usb(msp, 20 + pico_w / 2 - rect_width / 2, 20, rect_width, pico_h, pico_y_from_top)
 
@@ -530,7 +529,7 @@ def create_dxf_layer5(file_name, doc = ezdxf.new(dxfversion='R2010')):
     # doc = ezdxf.new(dxfversion='R2010')
     msp = doc.modelspace()
     pico_wire_w = 3
-    pico_wire_h = 6
+    pico_wire_h = 1.62
 
     draw_all_screws(msp, box_width, box_height)
     for name, (x, y, radius) in get_small_circle_points(box_width, box_height):
